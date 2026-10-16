@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>בודק ומתרגל שגיאות כתיב</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tesseract.js for offline/in-browser OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --border: #e2e8f0;
+      --radius: 18px;
+      --shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 70px;
+    }
+
+    header {
+      background: #ffffff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #0f172a;
+    }
+
+    /* Capture & Upload Section */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      outline: none;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .preview-box {
+      margin-top: 10px;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px dashed var(--border);
+      background: #fafafa;
+      min-height: 120px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-box img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .btn-clear-img {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.65);
+      color: white;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Textarea */
+    .textarea-field {
+      width: 100%;
+      min-height: 90px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      resize: vertical;
+      background: #ffffff;
+      outline: none;
+      line-height: 1.5;
+    }
+
+    .textarea-field:focus {
+      border-color: var(--primary);
+    }
+
+    .quick-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .quick-examples span {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .chip {
+      background: #eef2f6;
+      font-size: 0.78rem;
+      color: #334155;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .chip:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    /* Status & Progress */
+    .status-box {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .status-box.active {
+      display: flex;
+    }
+
+    .status-loading {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--primary-dark);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results */
+    .result-section {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .recognized-text-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .error-highlight {
+      background: var(--danger-light);
+      color: var(--danger);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px dashed var(--danger);
+    }
+
+    .error-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .error-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .badge-diff {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .badge-wrong {
+      color: var(--danger);
+      text-decoration: line-through;
+    }
+
+    .badge-correct {
+      color: var(--success);
+      background: var(--success-light);
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
+
+    .explanation-text {
+      font-size: 0.9rem;
+      color: #334155;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    /* Practice Module */
+    .quiz-card {
+      background: linear-gradient(180deg, #ffffff, #f0f7ff);
+      border: 2px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 18px;
+      display: none;
+    }
+
+    .quiz-question {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .quiz-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .opt-btn {
+      background: #ffffff;
+      border: 2px solid var(--border);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .opt-btn:active {
+      transform: scale(0.96);
+    }
+
+    .opt-btn.correct {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .opt-btn.wrong {
+      background: var(--danger);
+      color: white;
+      border-color: var(--danger);
+    }
+
+    .quiz-feedback {
+      text-align: center;
+      font-size: 0.92rem;
+      font-weight: 600;
+      min-height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .api-settings-toggle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+      cursor: pointer;
+      margin-top: 8px;
+      text-decoration: underline;
+    }
+
+    .api-settings-panel {
+      display: none;
+      margin-top: 8px;
+      padding: 10px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+
+    .api-settings-panel input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-top: 5px;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    /* Bottom sticky navigation / quick actions */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 40;
+    }
+
+    .bottom-bar-inner {
+      max-width: 620px;
+      width: 100%;
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">✓</div>
+      <div class="brand-text">
+        <h1>מדייקון</h1>
+        <p>צילום, זיהוי שגיאות כתיב ותרגול תיקון</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Card 1: Input (Camera / Upload / Paste) -->
+    <div class="card">
+      <h2 class="card-title">
+        <span>📸</span> צילום או הזנת טקסט לבדיקה
+      </h2>
+
+      <div class="action-grid">
+        <!-- Direct camera capture -->
+        <label class="btn btn-primary">
+          <span>📷</span> צלם במצלמה
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+        </label>
+
+        <!-- Gallery / File upload -->
+        <label class="btn btn-secondary">
+          <span>🖼️</span> בחר תמונה
+          <input type="file" id="fileInput" accept="image/*" style="display:none;">
+        </label>
+      </div>
+
+      <!-- Preview Image -->
+      <div class="preview-box" id="previewBox">
+        <button class="btn-clear-img" id="clearImgBtn" title="הסר תמונה">✕</button>
+        <img id="imagePreview" alt="תצוגה מקדימה">
+      </div>
+
+      <!-- Textbox (can be auto-filled or manual) -->
+      <div style="margin-top: 12px;">
+        <textarea id="textInput" class="textarea-field" placeholder="הטקסט מהתמונה יופיע כאן (או כתבו כאן ישירות)..."></textarea>
+      </div>
+
+      <!-- Quick sample pills -->
+      <div class="quick-examples">
+        <span>נסו דוגמה מהירה:</span>
+        <button class="chip" onclick="loadSample(1)">אני ילך מחר עם החברים</button>
+        <button class="chip" onclick="loadSample(2)">קניתי ספה חדשה אם כריות</button>
+        <button class="chip" onclick="loadSample(3)">הוא לקח את הספר שאימא קנתה לו</button>
+      </div>
+
+      <!-- Processing Status -->
+      <div id="statusBox" class="status-box">
+        <div class="spinner"></div>
+        <span id="statusText">מעבד...</span>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <button id="analyzeBtn" class="btn btn-primary btn-block" onclick="runAnalysis()">
+          <span>🔍</span> בדוק שגיאות כתיב
+        </button>
+      </div>
+
+      <!-- Optional Gemini API key panel for cloud-grade AI -->
+      <div class="api-settings-toggle" onclick="toggleApiSettings()">
+        ⚙️ הגדרות מתקדמות (מפתח AI אופציונלי לדיוק מקסימלי)
+      </div>
+      <div id="apiSettingsPanel" class="api-settings-panel">
+        <div>האפליקציה כוללת מנוע בדיקה מובנה שרץ עצמאית. אם תרצו לחבר מפתח Gemini API אישי לניתוח עמוק עוד יותר של כתב יד מורכב:</div>
+        <input type="password" id="geminiApiKey" placeholder="הדבק כאן מפתח Gemini API (אופציונלי)">
+      </div>
+    </div>
+
+    <!-- Card 2: Interactive Practice / Quiz (if errors found) -->
+    <div id="quizCard" class="quiz-card">
+      <div class="card-title" style="justify-content: center; color: var(--primary);">
+        <span>🎯</span> זמן תרגול!
+      </div>
+      <div id="quizQuestion" class="quiz-question">איך כותבים נכון?</div>
+      <div id="quizOptions" class="quiz-options"></div>
+      <div id="quizFeedback" class="quiz-feedback"></div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button id="nextQuizBtn" class="btn btn-secondary" style="display:none;" onclick="nextQuestion()">שאלה הבאה ❯</button>
+      </div>
+    </div>
+
+    <!-- Card 3: Results & Explanations -->
+    <div id="resultsSection" class="result-section">
+      <div class="card">
+        <h3 class="card-title"><span>📝</span> הטקסט המפוענח</h3>
+        <div id="annotatedText" class="recognized-text-card"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title"><span>💡</span> פירוט והסברי שגיאות</h3>
+        <div id="errorsContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Comprehensive Hebrew spelling dictionary and grammar rulebase
+    const HEBREW_RULES = [
+      // 1. אית"ן עתיד גוף ראשון
+      {
+        pattern: /\bי(לך|עשה|בוא|גיד|שמע|ראה|קח|תן|דע|אכל|שתה|רוץ|שמור|פתח|סגור|קנה|בנה|ספר|נקה|דבר|לבש|חזור|שב|קום|כנס|צא)\b/g,
+        replace: (match, root) => 'א' + root,
+        type: 'אותיות אית"ן (גוף ראשון עתיד)',
+        explain: 'בגוף ראשון עתיד (אני) תמיד משתמשים באות א' ולא ב-י'. לכן: "א' + '{root}" ולא "י' + '{root}".',
+        distractors: (correct, wrong) => [correct, wrong, 'נ' + correct.slice(1), 'ת' + correct.slice(1)]
+      },
+      // 2. אם / עם
+      {
+        pattern: /\bאם\s+(החברים|חברים|המשפחה|הילדים|אבא|אימא|כולם|חבר|מישהו)\b/g,
+        replace: (match, group) => 'עם ' + group,
+        type: 'בלבול בין "אם" ל-"עם"',
+        explain: '"עם" משמעו ביחד / בלוויית מישהו. "אם" היא מילת תנאי (כמו: "אם יירד גשם"). כאן הכוונה היא לביחד.',
+        wordPair: { wrong: 'אם', correct: 'עם' }
+      },
+      {
+        pattern: /\bעם\s+(תרצה|תרצי|תרצו|יהיה|יירד|תבוא|יוכל|אפשר|תצטרך|תשאל)\b/g,
+        replace: (match, group) => 'אם ' + group,
+        type: 'בלבול בין "אם" ל-"עם"',
+        explain: '"אם" היא מילת תנאי (אם תרצה). "עם" משמעה יחד או באמצעות.',
+        wordPair: { wrong: 'עם', correct: 'אם' }
+      },
+      // 3. הומופוניות שכיחות
+      {
+        pattern: /\bקפיטליזם|קפיטל\b/g, // skip
+        matchWords: {
+          'עכשיו': ['אכשיו'],
+          'להתראות': ['להתרעות', 'להתראוט'],
+          'שולחן': ['שולחאן'],
+          'תודה': ['טודה'],
+          'שגיאה': ['סגיאה', 'שגיעה'],
+          'שגיאות': ['סגיאות', 'שגיעות'],
+          'מחר': ['מחרר'],
+          'חופש': ['חופשש'],
+          'כדור': ['קדור'],
+          'כלב': ['קלב'],
+          'חתול': ['חטול'],
+          'ספר': ['שפר'],
+          'קיר': ['כיר'],
+          'כובע': ['קובע'],
+          'עץ': ['אץ'],
+          'אוזן': ['עוזן'],
+          'עיניים': ['איניים'],
+          'רגל': ['ראגל'],
+          'ראש': ['ראשש'],
+          'בוקר': ['בוכר'],
+          'ערב': ['ארב'],
+          'צהריים': ['צהריםם'],
+          'לילה': ['לילהה'],
+          'שלום': ['שלוום']
+        }
+      }
+    ];
+
+    // Common specific misspellings mapping
+    const WORD_MAPPING = {
+      'אכשיו': { correct: 'עכשיו', rule: 'אותיות הומופוניות (א/ע)', exp: 'המילה "עכשיו" נכתבת באות ע' (מלשון "עד כה שעה").' },
+      'טודה': { correct: 'תודה', rule: 'אותיות הומופוניות (ט/ת)', exp: '"תודה" נכתבת ב-ת' (בדומה ל"הודיה", "תודה").' },
+      'קדור': { correct: 'כדור', rule: 'אותיות הומופוניות (כ/ק)', exp: '"כדור" נכתב באות כ'.' },
+      'חטול': { correct: 'חתול', rule: 'אותיות הומופוניות (ט/ת)', exp: '"חתול" נכתב ב-ת'.' },
+      'קלב': { correct: 'כלב', rule: 'אותיות הומופוניות (כ/ק)', exp: '"כלב" נכתב ב-כ'.' },
+      'סגיאה': { correct: 'שגיאה', rule: 'אותיות שורקות (ס/ש)', exp: '"שגיאה" נכתבת ב-ש' ימנית ו-א' בסוף.' },
+      'שגיעה': { correct: 'שגיאה', rule: 'בלבול א/ע בסוף מילה', exp: 'השורש הוא ש-ג-א, ולכן נכתב בא' ולא בע'.' },
+      'כובע': { correct: 'כובע', rule: 'תקין' },
+      'קובע': { correct: 'כובע', rule: 'כובע לעומת קובע', exp: 'אם הכוונה לכיסוי ראש, המילה נכתבת ב-כ' ("כובע"). "קובע" פירושו מחליט/מגדיר.' },
+      'ביגלל': { correct: 'בגלל', rule: 'כתיב חסר ניקוד של אותיות השימוש', exp: 'אותיות השימוש (ב, כ, ל, מ) מחוברות ישירות למילה בלי י'.' },
+      'בישביל': { correct: 'בשביל', rule: 'כתיב חסר ניקוד של אותיות השימוש', exp: 'נכתב "בשביל" ללא י' אחרי אות היחס ב'.' }
+    };
+
+    let currentErrors = [];
+    let currentQuizIndex = 0;
+    let selectedImageFile = null;
+
+    // Handle file selection
+    const cameraInput = document.getElementById('cameraInput');
+    const fileInput = document.getElementById('fileInput');
+    const previewBox = document.getElementById('previewBox');
+    const imagePreview = document.getElementById('imagePreview');
+    const clearImgBtn = document.getElementById('clearImgBtn');
+    const textInput = document.getElementById('textInput');
+    const statusBox = document.getElementById('statusBox');
+    const statusText = document.getElementById('statusText');
+
+    [cameraInput, fileInput].forEach(inp => {
+      inp.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+          handleImage(e.target.files[0]);
+        }
+      });
+    });
+
+    clearImgBtn.addEventListener('click', () => {
+      selectedImageFile = null;
+      previewBox.style.display = 'none';
+      imagePreview.src = '';
+      cameraInput.value = '';
+      fileInput.value = '';
+    });
+
+    function handleImage(file) {
+      selectedImageFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        previewBox.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+
+      // Trigger automatic local OCR
+      runLocalOcr(file);
+    }
+
+    async function runLocalOcr(file) {
+      statusBox.classList.add('active');
+      statusText.textContent = 'מזהה ומפענח כתב מהתמונה... (Tesseract OCR)';
+      
+      try {
+        if (window.Tesseract) {
+          const res = await Tesseract.recognize(file, 'heb+eng', {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                statusText.textContent = `מפענח טקסט: ${Math.round(m.progress * 100)}%`;
+              }
+            }
+          });
+          const ocrText = res.data.text.trim();
+          if (ocrText) {
+            textInput.value = ocrText;
+            statusText.textContent = 'הטקסט פוענח בהצלחה!';
+            setTimeout(() => statusBox.classList.remove('active'), 1200);
+            runAnalysis();
+          } else {
+            statusText.textContent = 'התמונה נקלטה. לחצו על "בדוק שגיאות"';
+            setTimeout(() => statusBox.classList.remove('active'), 1500);
+          }
+        }
+      } catch (err) {
+        console.error('OCR Error:', err);
+        statusText.textContent = 'לא הצלחנו לפענח אוטומטית. אפשר להקליד או לנסות תמונה חדה יותר.';
+        setTimeout(() => statusBox.classList.remove('active'), 2500);
+      }
+    }
+
+    function loadSample(num) {
+      if (num === 1) textInput.value = "מחר אני ילך לספרייה אם החברים שלי כי יש מבחן.";
+      if (num === 2) textInput.value = "קניתי ספה חדשה אם שתי כריות יפות, וטודה למי שעזר לי.";
+      if (num === 3) textInput.value = "אכשיו אני יקח את הקדור ונשחק במגרש עם תרצו לבוא.";
+      runAnalysis();
+    }
+
+    function toggleApiSettings() {
+      const p = document.getElementById('apiSettingsPanel');
+      p.style.display = p.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Main Analysis function
+    async function runAnalysis() {
+      const text = textInput.value.trim();
+      if (!text) {
+        alert('אנא צלמו תמונה עם טקסט או הקלידו טקסט בתיבה לבדיקה.');
+        return;
+      }
+
+      const apiKey = document.getElementById('geminiApiKey').value.trim();
+      statusBox.classList.add('active');
+      statusText.textContent = 'בודק שגיאות כתיב ודקדוק...';
+
+      if (apiKey) {
+        try {
+          await analyzeWithGemini(text, apiKey);
+          statusBox.classList.remove('active');
+          return;
+        } catch (e) {
+          console.warn('Gemini API call failed, falling back to local engine:', e);
+        }
+      }
+
+      // Local Rule Engine Analysis
+      analyzeLocally(text);
+      statusBox.classList.remove('active');
+    }
+
+    // Local heuristic engine
+    function analyzeLocally(rawText) {
+      currentErrors = [];
+      const words = rawText.split(/\s+/);
+
+      // 1. Check word mapping & homophones
+      words.forEach(w => {
+        const cleanW = w.replace(/^[\"',.!?;:()]+|[\"',.!?;:()]+$/g, '');
+        if (WORD_MAPPING[cleanW] && WORD_MAPPING[cleanW].rule !== 'תקין') {
+          const item = WORD_MAPPING[cleanW];
+          if (!currentErrors.find(e => e.wrong === cleanW)) {
+            currentErrors.push({
+              wrong: cleanW,
+              correct: item.correct,
+              rule: item.rule,
+              explain: item.exp
+            });
+          }
+        }
+      });
+
+      // 2. Check אית"ן עתיד (אני ילך -> אני אלך)
+      const eitanMatches = rawText.matchAll(/\b(אני\s+)?(י)(לך|עשה|בוא|גיד|שמע|ראה|קח|תן|דע|אכל|שתה|רוץ|שמור|פתח|סגור|קנה|בנה|ספר|נקה|דבר|לבש|חזור|שב|קום|כנס|צא)\b/g);
+      for (const m of eitanMatches) {
+        const fullWord = 'י' + m[3];
+        const correctWord = 'א' + m[3];
+        if (!currentErrors.find(e => e.wrong === fullWord)) {
+          currentErrors.push({
+            wrong: fullWord,
+            correct: correctWord,
+            rule: 'אותיות אית"ן (גוף ראשון עתיד)',
+            explain: `בעתיד בגוף ראשון (אני) פותחים תמיד ב-א' ולא ב-י'. לכן הצורה הנכונה היא "${correctWord}".`
+          });
+        }
+      }
+
+      // 3. Check אם / עם context
+      const imWithFriends = rawText.matchAll(/\bאם\s+(החברים|חברים|המשפחה|הילדים|אבא|אימא|כולם|חבר|מישהו)\b/g);
+      for (const m of imWithFriends) {
+        if (!currentErrors.find(e => e.wrong === 'אם ' + m[1])) {
+          currentErrors.push({
+            wrong: 'אם ' + m[1],
+            correct: 'עם ' + m[1],
+            rule: 'בלבול בין "אם" ל-"עם"',
+            explain: '"עם" פירושו ביחד, בצוותא. "אם" היא מילת תנאי (אם... אז...). כאן הכוונה להצטרפות או שותפות.'
+          });
+        }
+      }
+
+      const imCondition = rawText.matchAll(/\bעם\s+(תרצה|תרצי|תרצו|יהיה|יירד|תבוא|יוכל|אפשר|תצטרך|תשאל)\b/g);
+      for (const m of imCondition) {
+        if (!currentErrors.find(e => e.wrong === 'עם ' + m[1])) {
+          currentErrors.push({
+            wrong: 'עם ' + m[1],
+            correct: 'אם ' + m[1],
+            rule: 'בלבול בין "אם" ל-"עם"',
+            explain: '"אם" פירושה מילת תנאי (אם תרצה). "עם" פירושה ביחד.'
+          });
+        }
+      }
+
+      displayResults(rawText, currentErrors);
+    }
+
+    // Display results in UI
+    function displayResults(originalText, errors) {
+      const resultsSection = document.getElementById('resultsSection');
+      const annotatedText = document.getElementById('annotatedText');
+      const errorsContainer = document.getElementById('errorsContainer');
+      const quizCard = document.getElementById('quizCard');
+
+      resultsSection.style.display = 'flex';
+      errorsContainer.innerHTML = '';
+
+      if (errors.length === 0) {
+        annotatedText.innerHTML = `<span style="color:var(--success); font-weight:600;">✓ כל הכבוד! לא אותרו שגיאות כתיב בטקסט.</span><br><br>${originalText}`;
+        errorsContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">הטקסט תקין לחלוטין לפי כללי הכתיב.</div>';
+        quizCard.style.display = 'none';
+        return;
+      }
+
+      // Highlight in text
+      let highlighted = originalText;
+      errors.forEach(err => {
+        const regex = new RegExp(`\\b${err.wrong}\\b`, 'g');
+        highlighted = highlighted.replace(regex, `<span class="error-highlight" title="תיקון: ${err.correct}">${err.wrong}</span>`);
+      });
+      annotatedText.innerHTML = highlighted;
+
+      // Fill error cards
+      errors.forEach(err => {
+        const card = document.createElement('div');
+        card.className = 'error-card';
+        card.innerHTML = `
+          <div class="error-header">
+            <div class="badge-diff">
+              <span class="badge-wrong">${err.wrong}</span>
+              <span>➔</span>
+              <span class="badge-correct">${err.correct}</span>
+            </div>
+            <span style="font-size:0.75rem; color:var(--text-muted); background:#f1f5f9; padding:2px 8px; border-radius:6px;">${err.rule}</span>
+          </div>
+          <div class="explanation-text">${err.explain}</div>
+        `;
+        errorsContainer.appendChild(card);
+      });
+
+      // Setup Quiz
+      currentQuizIndex = 0;
+      quizCard.style.display = 'block';
+      loadQuizQuestion(currentQuizIndex);
+    }
+
+    // Quiz logic
+    function loadQuizQuestion(index) {
+      if (!currentErrors || index >= currentErrors.length) {
+        document.getElementById('quizQuestion').innerHTML = '🎉 סיימת את כל תרגילי התיקון בהצלחה!';
+        document.getElementById('quizOptions').innerHTML = '';
+        document.getElementById('quizFeedback').innerHTML = '<span style="color:var(--success)">מצוין! השליטה בכללים השתפרה.</span>';
+        document.getElementById('nextQuizBtn').style.display = 'none';
+        return;
+      }
+
+      const item = currentErrors[index];
+      const qTitle = `מה הצורה התקינה במקום "<strong>${item.wrong}</strong>"?`;
+      document.getElementById('quizQuestion').innerHTML = qTitle;
+
+      const optionsDiv = document.getElementById('quizOptions');
+      const feedbackDiv = document.getElementById('quizFeedback');
+      const nextBtn = document.getElementById('nextQuizBtn');
+
+      optionsDiv.innerHTML = '';
+      feedbackDiv.innerHTML = '';
+      nextBtn.style.display = 'none';
+
+      // Create options (Correct vs Wrong + generated plausibles)
+      const opts = [item.correct, item.wrong];
+      // Add slight variation distractor
+      if (item.correct.length > 2) {
+        const alt = item.correct.replace(/ה$/, 'א').replace(/ת$/, 'ט');
+        if (alt !== item.correct && alt !== item.wrong) opts.push(alt);
+      }
+      // Shuffle
+      opts.sort(() => Math.random() - 0.5);
+
+      opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, item.correct, btn, item.explain);
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selected, correct, clickedBtn, explain) {
+      const allBtns = document.querySelectorAll('.opt-btn');
+      allBtns.forEach(b => b.disabled = true);
+
+      const feedbackDiv = document.getElementById('quizFeedback');
+      const nextBtn = document.getElementById('nextQuizBtn');
+
+      if (selected === correct) {
+        clickedBtn.classList.add('correct');
+        feedbackDiv.innerHTML = `<span style="color:var(--success)">✓ תשובה נכונה!</span> <br><small style="color:#475569;">${explain}</small>`;
+      } else {
+        clickedBtn.classList.add('wrong');
+        allBtns.forEach(b => {
+          if (b.textContent === correct) b.classList.add('correct');
+        });
+        feedbackDiv.innerHTML = `<span style="color:var(--danger)">✗ לא נכון.</span> התשובה הנכונה היא: <strong>${correct}</strong><br><small style="color:#475569;">${explain}</small>`;
+      }
+
+      nextBtn.style.display = 'inline-flex';
+    }
+
+    function nextQuestion() {
+      currentQuizIndex++;
+      loadQuizQuestion(currentQuizIndex);
+    }
+
+    // Optional direct Gemini API call
+    async function analyzeWithGemini(text, apiKey) {
+      const prompt = `אתה מומחה לשפה העברית. נתח את הטקסט הבא, זהה שגיאות כתיב ודקדוק (כולל אותיות אית"ן, הומופוניות, אם/עם, זכר/נקבה).
+החזר אך ורק תשובת JSON במבנה הבא:
+{
+  "errors": [
+    {
+      "wrong": "המילה השגויה",
+      "correct": "המילה הנכונה",
+      "rule": "שם הכלל",
+      "explain": "הסבר פשוט וברור מדוע זו שגיאה וכיצד לזכור"
+    }
+  ]
+}
+
+טקסט לבדיקה:
+"${text}"`;
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      const data = await res.json();
+      const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
+      currentErrors = parsed.errors || [];
+      displayResults(text, currentErrors);
+    }
+  </script>
+</body>
+</html>
